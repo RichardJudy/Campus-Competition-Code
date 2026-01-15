@@ -1,6 +1,7 @@
 #include <fmt/core.h>
 #include <opencv2/opencv.hpp>
 #include <thread>
+#include <yaml-cpp/yaml.h>
 
 #include "io/usbcamera/usbcamera.hpp"
 #include "tasks/auto_aim/detector.hpp"
@@ -30,6 +31,15 @@ int main(int argc, char * argv[])
   auto device_name = cli.get<std::string>("name");
   auto display = cli.has("display");
 
+  // 从配置文件读取相机内参
+  auto yaml = YAML::LoadFile(config_path);
+  auto camera_matrix_data = yaml["camera_matrix"].as<std::vector<double>>();
+  // camera_matrix格式: [fx, 0, cx, 0, fy, cy, 0, 0, 1] (行优先)
+  const double FX = camera_matrix_data[0];  // fx
+  const double FY = camera_matrix_data[4];  // fy
+  const double CX = camera_matrix_data[2];  // cx
+  const double CY = camera_matrix_data[5];  // cy
+
   // 初始化USB相机
   io::USBCamera usbcam(device_name, config_path);
   
@@ -54,11 +64,6 @@ int main(int argc, char * argv[])
     auto armors = detector.detect(img, frame_count);
     for (auto & armor : armors) {
       solver.solve(armor);
-
-      constexpr double FX = 1320.5372;
-      constexpr double FY = 1321.02773;
-      constexpr double CX = 633.681963;
-      constexpr double CY = 414.417885;
 
       const double du = armor.center.x - CX;
       const double dv = armor.center.y - CY;
