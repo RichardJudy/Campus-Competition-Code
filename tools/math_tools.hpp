@@ -42,7 +42,7 @@ Eigen::MatrixXd ypd2xyz_jacobian(const Eigen::Vector3d & ypd);
 double delta_time(
   const std::chrono::steady_clock::time_point & a, const std::chrono::steady_clock::time_point & b);
 
-// 向量夹角 总是返回 0 ~ pi 来自SJTU
+// 向量夹角 总是返回 0 ~ pi 
 double get_abs_angle(const Eigen::Vector2d & vec1, const Eigen::Vector2d & vec2);
 
 // 返回输入值的平方
