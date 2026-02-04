@@ -102,11 +102,16 @@ v4l2-ctl --list-devices
 
 ./build/usbcamera_detect_test configs/demo.yaml -n=video2 -d
 
+```
+
+
 #### 在 build 目录运行
 
 ```bash
 
 ../configs/demo.yaml -n=video2 -d
+
+```
 
 ### 命令行参数说明
 
@@ -120,11 +125,9 @@ v4l2-ctl --list-devices
 ### 日志输出
 
 检测到装甲板时，会在控制台输出一行日志，格式如下：
-
 ```
 装甲板 #123: 世界坐标(1.234, 0.567, 2.890), 距离=3.456m, yaw=5.23deg, pitch=-2.15deg
 ```
-
 其中：
 - `#123`: 帧序号
 - `世界坐标(1.234, 0.567, 2.890)`: 目标在世界坐标系中的坐标 (x, y, z)
