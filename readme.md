@@ -33,6 +33,7 @@
 - spdlog
 - yaml-cpp
 - nlohmann_json
+- libusb-1.0
 
 ## 配置
 
