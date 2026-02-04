@@ -17,7 +17,7 @@ Detector::Detector(const std::string & config_path, bool debug)
   auto yaml = YAML::LoadFile(config_path);
 
   threshold_ = yaml["threshold"].as<double>();
-  max_angle_error_ = yaml["max_angle_error"].as<double>() / 57.3;  // degree to rad
+  max_angle_error_ = yaml["max_angle_error"].as<double>() / 57.3;
   min_lightbar_ratio_ = yaml["min_lightbar_ratio"].as<double>();
   max_lightbar_ratio_ = yaml["max_lightbar_ratio"].as<double>();
   min_lightbar_length_ = yaml["min_lightbar_length"].as<double>();
@@ -25,7 +25,7 @@ Detector::Detector(const std::string & config_path, bool debug)
   max_armor_ratio_ = yaml["max_armor_ratio"].as<double>();
   max_side_ratio_ = yaml["max_side_ratio"].as<double>();
   min_confidence_ = yaml["min_confidence"].as<double>();
-  max_rectangular_error_ = yaml["max_rectangular_error"].as<double>() / 57.3;  // degree to rad
+  max_rectangular_error_ = yaml["max_rectangular_error"].as<double>() / 57.3;
 
   save_path_ = "patterns";
   std::filesystem::create_directory(save_path_);
@@ -33,20 +33,15 @@ Detector::Detector(const std::string & config_path, bool debug)
 
 std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
 {
-  // 彩色图转灰度图
   cv::Mat gray_img;
   cv::cvtColor(bgr_img, gray_img, cv::COLOR_BGR2GRAY);
-
-  // 进行二值化
   cv::Mat binary_img;
   cv::threshold(gray_img, binary_img, threshold_, 255, cv::THRESH_BINARY);
   cv::imshow("binary_img", binary_img);
 
-  // 获取轮廓点
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(binary_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
-  // 获取灯条（只保留红色和蓝色）
   std::size_t lightbar_id = 0;
   std::list<Lightbar> lightbars;
   for (const auto & contour : contours) {
@@ -64,10 +59,8 @@ std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
     lightbar_id += 1;
   }
 
-  // 将灯条从左到右排序
   lightbars.sort([](const Lightbar & a, const Lightbar & b) { return a.center.x < b.center.x; });
 
-  // 获取装甲板
   std::list<Armor> armors;
   for (auto left = lightbars.begin(); left != lightbars.end(); left++) {
     for (auto right = std::next(left); right != lightbars.end(); right++) {
@@ -90,9 +83,7 @@ std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
         continue;
       }
 
-      // 装甲板重叠, 保留面积小的（使用几何尺寸计算）
       if (armor1->left.id == armor2->left.id || armor1->right.id == armor2->right.id) {
-        // 使用装甲板的长宽比和灯条长度估算面积
         auto area1 = armor1->ratio * std::max(armor1->left.length, armor1->right.length);
         auto area2 = armor2->ratio * std::max(armor2->left.length, armor2->right.length);
         if (area1 < area2)
@@ -101,7 +92,6 @@ std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
           armor1->duplicated = true;
       }
 
-      // 装甲板相连，保留几何误差小的（矩形度更好）
       if (armor1->left.id == armor2->right.id || armor1->right.id == armor2->left.id) {
         if (armor1->rectangular_error > armor2->rectangular_error)
           armor1->duplicated = true;
@@ -120,12 +110,10 @@ std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
 
 bool Detector::detect(Armor & armor, const cv::Mat & bgr_img)
 {
-  // 取得四个角点
   auto tl = armor.points[0];
   auto tr = armor.points[1];
   auto br = armor.points[2];
   auto bl = armor.points[3];
-  // 计算向量和调整后的点
   auto lt2b = bl - tl;
   auto rt2b = br - tr;
   auto tl1 = (tl + bl) / 2 - lt2b;
@@ -138,34 +126,26 @@ bool Detector::detect(Armor & armor, const cv::Mat & bgr_img)
   auto tr2 = (tl1 + tr) / 2 + 0.75 * tl2tr;
   auto bl2 = (bl1 + br) / 2 - 0.75 * bl2br;
   auto br2 = (bl1 + br) / 2 + 0.75 * bl2br;
-  // 构造新的四个角点
   std::vector<cv::Point> points = {tl2, tr2, br2, bl2};
   auto armor_rotaterect = cv::minAreaRect(points);
   cv::Rect boundingBox = armor_rotaterect.boundingRect();
-  // 检查boundingBox是否超出图像边界
   if (
     boundingBox.x < 0 || boundingBox.y < 0 || boundingBox.x + boundingBox.width > bgr_img.cols ||
     boundingBox.y + boundingBox.height > bgr_img.rows) {
     return false;
   }
 
-  // 在图像上裁剪出这个矩形区域（ROI）
   cv::Mat armor_roi = bgr_img(boundingBox);
   if (armor_roi.empty()) {
     return false;
   }
 
-  // 彩色图转灰度图
   cv::Mat gray_img;
   cv::cvtColor(armor_roi, gray_img, cv::COLOR_BGR2GRAY);
-  // 进行二值化
   cv::Mat binary_img;
   cv::threshold(gray_img, binary_img, threshold_, 255, cv::THRESH_BINARY);
-  // cv::imshow("binary_img", binary_img);
-  // 获取轮廓点
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(binary_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-  // 获取灯条（只保留红色和蓝色）
   std::size_t lightbar_id = 0;
   std::list<Lightbar> lightbars;
   for (const auto & contour : contours) {
@@ -175,21 +155,15 @@ bool Detector::detect(Armor & armor, const cv::Mat & bgr_img)
     if (!check_geometry(lightbar)) continue;
 
     lightbar.color = get_color(bgr_img, contour);
-    
-    // 只保留红色和蓝色灯条，过滤其他颜色
     if (lightbar.color != Color::red && lightbar.color != Color::blue) continue;
-    
-    // lightbar_points_corrector(lightbar, gray_img); //关闭PCA
     lightbars.emplace_back(lightbar);
     lightbar_id += 1;
   }
 
   if (lightbars.size() < 2) return false;
 
-  // 将灯条从左到右排序
   lightbars.sort([](const Lightbar & a, const Lightbar & b) { return a.center.x < b.center.x; });
 
-  // 计算与 tl_roi, bl_roi 和 br_roi, tr_roi 距离最近的灯条
   Lightbar * closest_left_lightbar = nullptr;
   Lightbar * closest_right_lightbar = nullptr;
   float min_distance_tl_bl = std::numeric_limits<float>::max();
@@ -254,10 +228,7 @@ bool Detector::check_name(const Armor & armor) const
   auto name_ok = armor.name != ArmorName::not_armor;
   auto confidence_ok = armor.confidence > min_confidence_;
 
-  // 保存不确定的图案，用于分类器的迭代
   if (name_ok && !confidence_ok) save(armor);
-
-  // 出现 5号 则显示 debug 信息。但不过滤。
   if (armor.name == ArmorName::five) tools::logger()->debug("See pattern 5");
 
   return name_ok && confidence_ok;
@@ -269,7 +240,6 @@ bool Detector::check_type(const Armor & armor) const
                    ? (armor.name != ArmorName::one && armor.name != ArmorName::base)
                    : (armor.name == ArmorName::one || armor.name == ArmorName::base);
 
-  // 保存异常的图案，用于分类器的迭代
   if (!name_ok) {
     tools::logger()->debug(
       "see strange armor: {} {}", ARMOR_TYPES[armor.type], ARMOR_NAMES[armor.name]);
@@ -281,30 +251,22 @@ bool Detector::check_type(const Armor & armor) const
 
 Color Detector::get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> & contour) const
 {
-  // 转换为HSV颜色空间
   cv::Mat hsv_img;
   cv::cvtColor(bgr_img, hsv_img, cv::COLOR_BGR2HSV);
-  
-  // 定义红色和蓝色的HSV范围
-  // 红色在HSV中分布在两个区域（因为红色在色相环的两端）
-  cv::Scalar red_lower1(0, 50, 50);    // 红色范围1：0-10，提高饱和度和亮度阈值以提高准确性
+
+  cv::Scalar red_lower1(0, 50, 50);
   cv::Scalar red_upper1(10, 255, 255);
-  cv::Scalar red_lower2(170, 50, 50);   // 红色范围2：170-180
+  cv::Scalar red_lower2(170, 50, 50);
   cv::Scalar red_upper2(180, 255, 255);
-  
-  // 蓝色在HSV中的范围：100-130
-  cv::Scalar blue_lower(100, 50, 50);   // 提高饱和度和亮度阈值以提高准确性
+  cv::Scalar blue_lower(100, 50, 50);
   cv::Scalar blue_upper(130, 255, 255);
-  
-  // 使用轮廓内部区域进行颜色检测，而不仅仅是轮廓点
+
   cv::Mat mask = cv::Mat::zeros(bgr_img.size(), CV_8UC1);
   cv::fillPoly(mask, std::vector<std::vector<cv::Point>>{contour}, cv::Scalar(255));
-  
+
   int red_count = 0, blue_count = 0;
   int total_count = 0;
-  
-  // 在轮廓区域内采样检测颜色（使用步长采样以提高效率）
-  const int step = 2;  // 采样步长，可以根据需要调整
+  const int step = 2;
   for (int y = 0; y < mask.rows; y += step) {
     for (int x = 0; x < mask.cols; x += step) {
       if (mask.at<uchar>(y, x) > 0) {
@@ -318,13 +280,10 @@ Color Detector::get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> 
         int v = hsv[2];
         
         total_count++;
-        
-        // 检查是否为红色（两个范围）
         if ((h >= red_lower1[0] && h <= red_upper1[0] && s >= red_lower1[1] && v >= red_lower1[2]) ||
             (h >= red_lower2[0] && h <= red_upper2[0] && s >= red_lower2[1] && v >= red_lower2[2])) {
           red_count++;
         }
-        // 检查是否为蓝色
         else if (h >= blue_lower[0] && h <= blue_upper[0] && s >= blue_lower[1] && v >= blue_lower[2]) {
           blue_count++;
         }
@@ -332,7 +291,6 @@ Color Detector::get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> 
     }
   }
   
-  // 如果采样点太少，回退到轮廓点检测
   if (total_count < 10) {
     for (const auto & point : contour) {
       if (point.x < 0 || point.x >= hsv_img.cols || point.y < 0 || point.y >= hsv_img.rows) {
@@ -345,21 +303,16 @@ Color Detector::get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> 
       int v = hsv[2];
       
       total_count++;
-      
-      // 检查是否为红色（两个范围）
       if ((h >= red_lower1[0] && h <= red_upper1[0] && s >= red_lower1[1] && v >= red_lower1[2]) ||
           (h >= red_lower2[0] && h <= red_upper2[0] && s >= red_lower2[1] && v >= red_lower2[2])) {
         red_count++;
       }
-      // 检查是否为蓝色
       else if (h >= blue_lower[0] && h <= blue_upper[0] && s >= blue_lower[1] && v >= blue_lower[2]) {
         blue_count++;
       }
     }
   }
   
-  // 根据统计结果判断颜色，增加最小阈值判断以提高准确性
-  // 只有当某种颜色的点数达到总点数的30%以上时才认为有效
   const double min_color_ratio = 0.3;
   if (total_count > 0) {
     double red_ratio = static_cast<double>(red_count) / total_count;
@@ -372,14 +325,11 @@ Color Detector::get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> 
     }
   }
   
-  // 如果都不满足阈值，返回数量较多的颜色（兼容旧逻辑）
   return blue_count > red_count ? Color::blue : Color::red;
 }
 
 cv::Mat Detector::get_pattern(const cv::Mat & bgr_img, const Armor & armor) const
 {
-  // 延长灯条获得装甲板角点
-  // 1.125 = 0.5 * armor_height / lightbar_length = 0.5 * 126mm / 56mm
   auto tl = armor.left.center - armor.left.top2bottom * 1.125;
   auto bl = armor.left.center + armor.left.top2bottom * 1.125;
   auto tr = armor.right.center - armor.right.top2bottom * 1.125;
@@ -398,9 +348,6 @@ cv::Mat Detector::get_pattern(const cv::Mat & bgr_img, const Armor & armor) cons
 
 ArmorType Detector::get_type(const Armor & armor)
 {
-  /// 优先根据当前armor.ratio判断
-  /// TODO: 25赛季是否还需要根据比例判断大小装甲？能否根据图案直接判断？
-
   if (armor.ratio > 3.0) {
     // tools::logger()->debug(
     //   "[Detector] get armor type by ratio: BIG {} {:.2f}", ARMOR_NAMES[armor.name], armor.ratio);
@@ -415,13 +362,9 @@ ArmorType Detector::get_type(const Armor & armor)
 
   // tools::logger()->debug("[Detector] get armor type by name: {}", ARMOR_NAMES[armor.name]);
 
-  // 英雄、基地只能是大装甲板
   if (armor.name == ArmorName::one || armor.name == ArmorName::base) {
     return ArmorType::big;
   }
-
-  // 其他所有（工程、哨兵、前哨站、步兵）都是小装甲板
-  /// TODO: 基地顶装甲是小装甲板
   return ArmorType::small;
 }
 
@@ -434,10 +377,6 @@ cv::Point2f Detector::get_center_norm(const cv::Mat & bgr_img, const cv::Point2f
 
 void Detector::save(const Armor & armor) const
 {
-  // 已移除分类器，不再保存图案
-  // auto file_name = fmt::format("{:%Y-%m-%d_%H-%M-%S}", std::chrono::system_clock::now());
-  // auto img_path = fmt::format("{}/{}_{}.jpg", save_path_, armor.name, file_name);
-  // cv::imwrite(img_path, armor.pattern);
 }
 
 void Detector::show_result(
@@ -456,7 +395,6 @@ void Detector::show_result(
   }
 
   for (const auto & armor : armors) {
-    // 只显示几何信息，不再显示编号和类型
     auto info = fmt::format(
       "ratio:{:.2f} side:{:.2f} err:{:.1f}deg", armor.ratio, armor.side_ratio,
       armor.rectangular_error * 57.3);
@@ -465,114 +403,87 @@ void Detector::show_result(
   }
 
   cv::Mat binary_img2;
-  cv::resize(binary_img, binary_img2, {}, 0.5, 0.5);  // 显示时缩小图片尺寸
-  cv::resize(detection, detection, {}, 0.5, 0.5);     // 显示时缩小图片尺寸
-
-  // cv::imshow("threshold", binary_img2);
-  // cv::imshow("detection", detection);  // 已关闭 detection 窗口
+  cv::resize(binary_img, binary_img2, {}, 0.5, 0.5);
+  cv::resize(detection, detection, {}, 0.5, 0.5);
 }
 
 void Detector::lightbar_points_corrector(Lightbar & lightbar, const cv::Mat & gray_img) const
 {
-  // 配置参数
-  constexpr float MAX_BRIGHTNESS = 25;  // 归一化最大亮度值
-  constexpr float ROI_SCALE = 0.07;     // ROI扩展比例
-  constexpr float SEARCH_START = 0.4;   // 搜索起始位置比例（原0.8/2）
-  constexpr float SEARCH_END = 0.6;     // 搜索结束位置比例（原1.2/2）
+  constexpr float MAX_BRIGHTNESS = 25;
+  constexpr float ROI_SCALE = 0.07;
+  constexpr float SEARCH_START = 0.4;
+  constexpr float SEARCH_END = 0.6;
 
-  // 扩展并裁剪ROI
   cv::Rect roi_box = lightbar.rotated_rect.boundingRect();
   roi_box.x -= roi_box.width * ROI_SCALE;
   roi_box.y -= roi_box.height * ROI_SCALE;
   roi_box.width += 2 * roi_box.width * ROI_SCALE;
   roi_box.height += 2 * roi_box.height * ROI_SCALE;
-
-  // 边界约束
   roi_box &= cv::Rect(0, 0, gray_img.cols, gray_img.rows);
 
-  // 归一化ROI
   cv::Mat roi = gray_img(roi_box);
   const float mean_val = cv::mean(roi)[0];
   roi.convertTo(roi, CV_32F);
   cv::normalize(roi, roi, 0, MAX_BRIGHTNESS, cv::NORM_MINMAX);
 
-  // 计算质心
   const cv::Moments moments = cv::moments(roi);
   const cv::Point2f centroid(
     moments.m10 / moments.m00 + roi_box.x, moments.m01 / moments.m00 + roi_box.y);
 
-  // 生成稀疏点云（优化性能）
   std::vector<cv::Point2f> points;
   for (int i = 0; i < roi.rows; ++i) {
     for (int j = 0; j < roi.cols; ++j) {
       const float weight = roi.at<float>(i, j);
-      if (weight > 1e-3) {          // 忽略极小值提升性能
-        points.emplace_back(j, i);  // 坐标相对于ROI区域
+      if (weight > 1e-3) {
+        points.emplace_back(j, i);
       }
     }
   }
 
-  // PCA计算对称轴方向
   cv::PCA pca(cv::Mat(points).reshape(1), cv::Mat(), cv::PCA::DATA_AS_ROW);
   cv::Point2f axis(pca.eigenvectors.at<float>(0, 0), pca.eigenvectors.at<float>(0, 1));
   axis /= cv::norm(axis);
-  if (axis.y > 0) axis = -axis;  // 统一方向
+  if (axis.y > 0) axis = -axis;
 
   const auto find_corner = [&](int direction) -> cv::Point2f {
     const float dx = axis.x * direction;
     const float dy = axis.y * direction;
     const float search_length = lightbar.length * (SEARCH_END - SEARCH_START);
-
     std::vector<cv::Point2f> candidates;
-
-    // 横向采样多个候选线
     const int half_width = (lightbar.width - 2) / 2;
     for (int i_offset = -half_width; i_offset <= half_width; ++i_offset) {
-      // 计算搜索起点
       cv::Point2f start_point(
         centroid.x + lightbar.length * SEARCH_START * dx + i_offset,
         centroid.y + lightbar.length * SEARCH_START * dy);
-
-      // 沿轴搜索亮度跳变点
       cv::Point2f corner = start_point;
       float max_diff = 0;
       bool found = false;
-
       for (float step = 0; step < search_length; ++step) {
         const cv::Point2f cur_point(start_point.x + dx * step, start_point.y + dy * step);
-
-        // 边界检查
         if (
           cur_point.x < 0 || cur_point.x >= gray_img.cols || cur_point.y < 0 ||
           cur_point.y >= gray_img.rows) {
           break;
         }
-
-        // 计算亮度差（使用双线性插值提升精度）
         const auto prev_val = gray_img.at<uchar>(cv::Point2i(cur_point - cv::Point2f(dx, dy)));
         const auto cur_val = gray_img.at<uchar>(cv::Point2i(cur_point));
         const float diff = prev_val - cur_val;
-
         if (diff > max_diff && prev_val > mean_val) {
           max_diff = diff;
-          corner = cur_point - cv::Point2f(dx, dy);  // 跳变发生在上一位置
+          corner = cur_point - cv::Point2f(dx, dy);
           found = true;
         }
       }
-
       if (found) {
         candidates.push_back(corner);
       }
     }
-
-    // 返回候选点均值
     return candidates.empty()
              ? cv::Point2f(-1, -1)
              : std::accumulate(candidates.begin(), candidates.end(), cv::Point2f(0, 0)) /
                  static_cast<float>(candidates.size());
   };
 
-  // 并行检测顶部和底部
   lightbar.top = find_corner(1);
   lightbar.bottom = find_corner(-1);
 }

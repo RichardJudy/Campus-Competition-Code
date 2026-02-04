@@ -30,7 +30,6 @@ int main(int argc, char * argv[])
   auto device_name = cli.get<std::string>("name");
   auto display = cli.has("display");
 
-  // 初始化USB相机
   io::USBCamera usbcam(device_name, config_path);
   
   auto_aim::Detector detector(config_path, display);

@@ -80,14 +80,14 @@ struct Lightbar
 struct Armor
 {
   Color color;
-  Lightbar left, right;     //used to be const
-  cv::Point2f center;       // 不是对角线交点，不能作为实际中心！
-  cv::Point2f center_norm;  // 归一化坐标
+  Lightbar left, right;
+  cv::Point2f center;
+  cv::Point2f center_norm;
   std::vector<cv::Point2f> points;
 
-  double ratio;              // 两灯条的中点连线与长灯条的长度之比
-  double side_ratio;         // 长灯条与短灯条的长度之比
-  double rectangular_error;  // 灯条和中点连线所成夹角与π/2的差值
+  double ratio;
+  double side_ratio;
+  double rectangular_error;
 
   ArmorType type;
   ArmorName name;

@@ -72,9 +72,6 @@ add_subdirectory(tasks/auto_aim)
 add_executable(usbcamera_detect_test tests/usbcamera_detect_test.cpp)
 target_link_libraries(usbcamera_detect_test ${OpenCV_LIBS} fmt::fmt yaml-cpp tools io auto_aim)
 
-# 相机标定程序（使用 Python 版本 calibrate_usb.py，C++ 版本已移除）
-# add_executable(calibrate_usb tests/calibrate_usb.cpp)
-# target_link_libraries(calibrate_usb ${OpenCV_LIBS})
 
 # planner_test 依赖 Planner 模块，已关闭
 # add_executable(planner_test tests/planner_test.cpp)

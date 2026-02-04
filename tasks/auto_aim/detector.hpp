@@ -20,7 +20,6 @@ public:
 
   bool detect(Armor & armor, const cv::Mat & bgr_img);
 
-  // 动态调节二值化阈值（用于调试）
   inline double threshold() const { return threshold_; }
   inline void set_threshold(double value) { threshold_ = value; }
 
@@ -40,7 +39,6 @@ private:
   bool debug_;
   std::string save_path_;
 
-  // 利用PCA回归角点，参考自https://github.com/CSU-FYT-Vision/FYT2024_vision
   void lightbar_points_corrector(Lightbar & lightbar, const cv::Mat & gray_img) const;
 
   bool check_geometry(const Lightbar & lightbar) const;
