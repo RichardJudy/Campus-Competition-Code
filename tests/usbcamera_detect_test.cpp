@@ -1,6 +1,7 @@
 #include <fmt/core.h>
 #include <opencv2/opencv.hpp>
 #include <thread>
+#include <yaml-cpp/yaml.h>
 
 #include "io/usbcamera/usbcamera.hpp"
 #include "tasks/auto_aim/detector.hpp"
@@ -30,6 +31,13 @@ int main(int argc, char * argv[])
   auto device_name = cli.get<std::string>("name");
   auto display = cli.has("display");
 
+  auto yaml = YAML::LoadFile(config_path);
+  auto camera_matrix_data = yaml["camera_matrix"].as<std::vector<double>>();
+  const double FX = camera_matrix_data[0];
+  const double FY = camera_matrix_data[4];
+  const double CX = camera_matrix_data[2];
+  const double CY = camera_matrix_data[5];
+
   io::USBCamera usbcam(device_name, config_path);
   
   auto_aim::Detector detector(config_path, display);
@@ -53,11 +61,6 @@ int main(int argc, char * argv[])
     auto armors = detector.detect(img, frame_count);
     for (auto & armor : armors) {
       solver.solve(armor);
-
-      constexpr double FX = 1320.5372;
-      constexpr double FY = 1321.02773;
-      constexpr double CX = 633.681963;
-      constexpr double CY = 414.417885;
 
       const double du = armor.center.x - CX;
       const double dv = armor.center.y - CY;
@@ -83,11 +86,11 @@ int main(int argc, char * argv[])
       cv::Mat display_img = img.clone();
       for (const auto & armor : armors) {
         tools::draw_points(display_img, armor.points, {0, 255, 0}, 2);
-        double distance = std::sqrt(
+        double dist = std::sqrt(
           armor.xyz_in_world[0]*armor.xyz_in_world[0] + 
           armor.xyz_in_world[1]*armor.xyz_in_world[1] + 
           armor.xyz_in_world[2]*armor.xyz_in_world[2]);
-        std::string info = fmt::format("dist: {:.2f}m", distance);
+        std::string info = fmt::format("dist: {:.2f}m", dist);
         tools::draw_text(display_img, info, armor.center, {0, 255, 0});
       }
       cv::imshow("Detection Result", display_img);

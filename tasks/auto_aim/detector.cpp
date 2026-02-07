@@ -16,6 +16,17 @@ Detector::Detector(const std::string & config_path, bool debug)
 {
   auto yaml = YAML::LoadFile(config_path);
 
+  // 读取敌方颜色
+  std::string enemy_color_str = yaml["enemy_color"].as<std::string>();
+  if (enemy_color_str == "red") {
+    enemy_color_ = Color::red;
+  } else if (enemy_color_str == "blue") {
+    enemy_color_ = Color::blue;
+  } else {
+    enemy_color_ = Color::blue;  // 默认蓝色
+    tools::logger()->warn("未知的敌方颜色: {}, 使用默认蓝色", enemy_color_str);
+  }
+
   threshold_ = yaml["threshold"].as<double>();
   max_angle_error_ = yaml["max_angle_error"].as<double>() / 57.3;
   min_lightbar_ratio_ = yaml["min_lightbar_ratio"].as<double>();
@@ -65,6 +76,9 @@ std::list<Armor> Detector::detect(const cv::Mat & bgr_img, int frame_count)
   for (auto left = lightbars.begin(); left != lightbars.end(); left++) {
     for (auto right = std::next(left); right != lightbars.end(); right++) {
       if (left->color != right->color) continue;
+      
+      // 过滤非敌方颜色的装甲板
+      if (left->color != enemy_color_) continue;
 
       auto armor = Armor(*left, *right);
       if (!check_geometry(armor)) continue;

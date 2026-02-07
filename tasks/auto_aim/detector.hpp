@@ -35,6 +35,8 @@ private:
   double max_side_ratio_;
   double min_confidence_;
   double max_rectangular_error_;
+  
+  Color enemy_color_;  // 敌方颜色
 
   bool debug_;
   std::string save_path_;

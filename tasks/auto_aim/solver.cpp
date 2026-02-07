@@ -9,9 +9,9 @@
 
 namespace auto_aim
 {
-constexpr double LIGHTBAR_LENGTH = 0.050;
-constexpr double BIG_ARMOR_WIDTH = 230e-3;
-constexpr double SMALL_ARMOR_WIDTH = 0.055;
+constexpr double LIGHTBAR_LENGTH = 0.006;
+constexpr double BIG_ARMOR_WIDTH = 0.0735;  // 根据ratio值将此参数设为校赛装甲板宽度
+constexpr double SMALL_ARMOR_WIDTH = 0.0735;
 
 const std::vector<cv::Point3f> BIG_ARMOR_POINTS{
   {0, BIG_ARMOR_WIDTH / 2, LIGHTBAR_LENGTH / 2},
