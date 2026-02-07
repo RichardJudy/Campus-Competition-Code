@@ -23,8 +23,6 @@ public:
   inline double threshold() const { return threshold_; }
   inline void set_threshold(double value) { threshold_ = value; }
 
-  friend class YOLOV8;
-
 private:
 
   double threshold_;
@@ -41,19 +39,14 @@ private:
   bool debug_;
   std::string save_path_;
 
-  void lightbar_points_corrector(Lightbar & lightbar, const cv::Mat & gray_img) const;
-
   bool check_geometry(const Lightbar & lightbar) const;
   bool check_geometry(const Armor & armor) const;
-  bool check_name(const Armor & armor) const;
-  bool check_type(const Armor & armor) const;
 
   Color get_color(const cv::Mat & bgr_img, const std::vector<cv::Point> & contour) const;
-  cv::Mat get_pattern(const cv::Mat & bgr_img, const Armor & armor) const;
   ArmorType get_type(const Armor & armor);
   cv::Point2f get_center_norm(const cv::Mat & bgr_img, const cv::Point2f & center) const;
-
   void save(const Armor & armor) const;
+
   void show_result(
     const cv::Mat & binary_img, const cv::Mat & bgr_img, const std::list<Lightbar> & lightbars,
     const std::list<Armor> & armors, int frame_count) const;

@@ -53,18 +53,11 @@ add_subdirectory(tasks/auto_aim)
 # target_link_libraries(uav_debug ${OpenCV_LIBS} fmt::fmt yaml-cpp auto_aim tools io)
 
 ##################calibration################
-# 只保留 detector + solver + usbcamera_detect_test，标定相关可执行程序暂不编译
-# add_executable(capture calibration/capture.cpp)
-# add_executable(calibrate_camera calibration/calibrate_camera.cpp)
-# add_executable(calibrate_handeye calibration/calibrate_handeye.cpp)
-# add_executable(calibrate_robotworld_handeye calibration/calibrate_robotworld_handeye.cpp)
-# add_executable(split_video calibration/split_video.cpp)
-
-# target_link_libraries(capture ${OpenCV_LIBS} fmt::fmt tools io)
-# target_link_libraries(calibrate_camera ${OpenCV_LIBS} fmt::fmt yaml-cpp tools)
-# target_link_libraries(calibrate_handeye ${OpenCV_LIBS} fmt::fmt yaml-cpp tools)
-# target_link_libraries(calibrate_robotworld_handeye ${OpenCV_LIBS} fmt::fmt yaml-cpp tools)
-# target_link_libraries(split_video ${OpenCV_LIBS} fmt::fmt tools)
+# 标定相关程序
+add_executable(capture calibration/capture.cpp)
+target_link_libraries(capture ${OpenCV_LIBS} fmt::fmt yaml-cpp tools io)
+add_executable(calibrate_camera calibration/calibrate_camera.cpp)
+target_link_libraries(calibrate_camera ${OpenCV_LIBS} fmt::fmt yaml-cpp tools)
 
 ##################tests##################
 # 当前仅保留 detector + solver + usbcamera_detect_test，这里只编译这一个测试程序

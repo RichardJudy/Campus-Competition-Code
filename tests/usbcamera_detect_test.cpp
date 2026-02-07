@@ -41,10 +41,7 @@ int main(int argc, char * argv[])
   io::USBCamera usbcam(device_name, config_path);
   
   auto_aim::Detector detector(config_path, display);
-  detector.set_threshold(250.0);
   auto_aim::Solver solver(config_path);
-  Eigen::Quaterniond default_q(1, 0, 0, 0);
-  solver.set_R_gimbal2world(default_q);
 
   cv::Mat img;
   std::chrono::steady_clock::time_point timestamp;
@@ -72,13 +69,13 @@ int main(int argc, char * argv[])
       const double pitch_deg = pitch_rad * 180.0 / CV_PI;
 
       double dist = std::sqrt(
-        armor.xyz_in_world[0]*armor.xyz_in_world[0] + 
-        armor.xyz_in_world[1]*armor.xyz_in_world[1] + 
-        armor.xyz_in_world[2]*armor.xyz_in_world[2]);
+        armor.xyz_in_gimbal[0]*armor.xyz_in_gimbal[0] + 
+        armor.xyz_in_gimbal[1]*armor.xyz_in_gimbal[1] + 
+        armor.xyz_in_gimbal[2]*armor.xyz_in_gimbal[2]);
       tools::logger()->info(
-        "装甲板 #{}: 世界坐标({:.3f}, {:.3f}, {:.3f}), 距离={:.3f}m, yaw={:.2f}deg, pitch={:.2f}deg",
+        "装甲板 #{}: 云台坐标({:.3f}, {:.3f}, {:.3f}), 距离={:.3f}m, yaw={:.2f}deg, pitch={:.2f}deg",
         frame_count,
-        armor.xyz_in_world[0], armor.xyz_in_world[1], armor.xyz_in_world[2],
+        armor.xyz_in_gimbal[0], armor.xyz_in_gimbal[1], armor.xyz_in_gimbal[2],
         dist, yaw_deg, pitch_deg);
     }
     
@@ -87,9 +84,9 @@ int main(int argc, char * argv[])
       for (const auto & armor : armors) {
         tools::draw_points(display_img, armor.points, {0, 255, 0}, 2);
         double dist = std::sqrt(
-          armor.xyz_in_world[0]*armor.xyz_in_world[0] + 
-          armor.xyz_in_world[1]*armor.xyz_in_world[1] + 
-          armor.xyz_in_world[2]*armor.xyz_in_world[2]);
+          armor.xyz_in_gimbal[0]*armor.xyz_in_gimbal[0] + 
+          armor.xyz_in_gimbal[1]*armor.xyz_in_gimbal[1] + 
+          armor.xyz_in_gimbal[2]*armor.xyz_in_gimbal[2]);
         std::string info = fmt::format("dist: {:.2f}m", dist);
         tools::draw_text(display_img, info, armor.center, {0, 255, 0});
       }
