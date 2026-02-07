@@ -65,6 +65,10 @@ target_link_libraries(calibrate_camera ${OpenCV_LIBS} fmt::fmt yaml-cpp tools)
 add_executable(usbcamera_detect_test tests/usbcamera_detect_test.cpp)
 target_link_libraries(usbcamera_detect_test ${OpenCV_LIBS} fmt::fmt yaml-cpp tools io auto_aim)
 
+# Copy configs and assets directories to build directory
+file(COPY ${CMAKE_SOURCE_DIR}/configs DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+
 
 # planner_test 依赖 Planner 模块，已关闭
 # add_executable(planner_test tests/planner_test.cpp)
